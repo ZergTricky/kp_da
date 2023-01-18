@@ -27,7 +27,7 @@ inline double rad(double angle) {
 
 class node {
 public:
-    uint id;
+    uint id{};
     uint offset = 0;
 
     node() = default;
@@ -59,6 +59,22 @@ private:
     friend double dist(node, node);
 };
 
+class compactNode {
+public:
+    uint id = 0, offset = 0;
+
+    compactNode(uint id) : id(id), offset(0) {}
+
+    compactNode(uint id, uint offset) : id(id), offset(offset) {}
+
+    bool operator<(const compactNode &other) const {
+        if (id != other.id) {
+            return id < other.id;
+        }
+        return offset < other.offset;
+    }
+};
+
 using edge = std::pair<uint, uint>;
 
 double dist(node a, node b) {
@@ -68,12 +84,12 @@ double dist(node a, node b) {
     return R * d;
 }
 
-std::vector<node> proceedNodes(std::ifstream &nodes) {
-    std::vector<node> V;
+std::vector<compactNode> proceedNodes(std::ifstream &nodes) {
+    std::vector<compactNode> V;
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
-        V.emplace_back(id, phi, lambda);
+        V.emplace_back(id);
     }
     V.shrink_to_fit();
 
@@ -100,7 +116,7 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
     return E;
 }
 
-void setOffset(std::ofstream &output, std::vector<node> &V, const std::vector<edge> &E) {
+void setOffset(std::ofstream &output, std::vector<compactNode> &V, const std::vector<edge> &E) {
     uint last;
     std::vector<uint> cur;
     for (uint i = 0; i < E.size(); ++i) {
@@ -160,9 +176,13 @@ void printEdges(std::ofstream &output, const std::vector<edge> &E) {
     }
 }
 
-void printNodes(std::ofstream &output, const std::vector<node> &V) {
-    for (const auto &nd: V) {
-        output << nd;
+void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode> &V) {
+    nodes.seekg(0);
+    uint id;
+    double phi, lambda;
+    while (nodes >> id >> phi >> lambda) {
+        auto iter = std::lower_bound(V.begin(), V.end(), id);
+        output << iter->id << " " << phi << " " << lambda << " " << iter->offset;
     }
 }
 
@@ -196,7 +216,7 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
 #ifdef DEBUG
     auto startNodes = std::chrono::steady_clock::now();
 #endif
-    std::vector<node> V = proceedNodes(nodes);
+    std::vector<compactNode> V = proceedNodes(nodes);
     std::sort(V.begin(), V.end());
 #ifdef DEBUG
     std::cout << "Nodes done! in " << since(startNodes).count() / 1000 << "sec " << std::endl;
@@ -224,7 +244,7 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
     output.open(outputFilename);
 
     output << V.size() << "\n";
-    printNodes(output, V);
+    printNodes(output, nodes, V);
     printEdges(output, E);
 }
 

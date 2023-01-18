@@ -84,7 +84,14 @@ void solve(const std::string &graphFilename, const std::string &inputFilename, c
     std::ifstream input(inputFilename);
     std::ofstream output(outputFilename, std::ios::binary);
 
+#ifdef DEBUG
+    auto startNodes = std::chrono::steady_clock::now();
+#endif
     std::vector<node> V = readNodes(graph);
+    sort(V.begin(), V.end());
+#ifdef DEBUG
+    std::cout << "Nodes done! in " << since(startNodes).count() / 1000 << "sec " << std::endl;
+#endif
     uint offset = graph.tellg();
 
     uint start, finish;
