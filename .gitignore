@@ -1,0 +1,25 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+/n.txt
+/o.txt
+/query.txt
+/res.txt
+/kp_da.cbp
+/kp_da
+/g.txt
+/europe.edges
+/e.txt
+/europe.nodes
+/CMakeCache.txt
+/cmake_install.cmake
+/b.txt
+/Testing/
+/CMakeFiles/
+/cmake-build-debug/
+/.cmake/
