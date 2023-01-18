@@ -80,9 +80,9 @@ void find(std::ifstream &graph, const uint offset, const std::vector<node> &V, c
 
 void solve(const std::string &graphFilename, const std::string &inputFilename, const std::string &outputFilename,
            bool isDetailed = false) {
-    std::ifstream graph(graphFilename);
+    std::ifstream graph(graphFilename, std::ios::binary);
     std::ifstream input(inputFilename);
-    std::ofstream output(outputFilename);
+    std::ofstream output(outputFilename, std::ios::binary);
 
     std::vector<node> V = readNodes(graph);
     uint offset = graph.tellg();

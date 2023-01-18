@@ -5,12 +5,15 @@
 #ifndef KP_DA_UTILS_H
 #define KP_DA_UTILS_H
 
+#include <chrono>
 #include "fstream"
 #include "cmath"
 #include "cassert"
 #include "vector"
 
 #include "iostream"
+
+#define DEBUG
 
 using uint = unsigned int;
 
@@ -128,10 +131,6 @@ void setOffset(std::ofstream &output, std::vector<node> &V, const std::vector<ed
         }
         output << "\n";
     }
-
-    for (int i = (int) V.size() - 1; i >= 0; --i) {
-
-    }
 }
 
 void printEdges(std::ofstream &output, const std::vector<edge> &E) {
@@ -167,30 +166,47 @@ void printNodes(std::ofstream &output, const std::vector<node> &V) {
     }
 }
 
+#ifdef DEBUG
+
+template<
+        class result_t   = std::chrono::milliseconds,
+        class clock_t    = std::chrono::steady_clock,
+        class duration_t = std::chrono::milliseconds
+>
+auto since(std::chrono::time_point<clock_t, duration_t> const &start) {
+    return std::chrono::duration_cast<result_t>(clock_t::now() - start);
+}
+
+#endif
+
+
 void
 prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, const std::string &outputFilename) {
-    uint len = 8192;
-    char nodesBuffer[len];
-    char edgesBuffer[len];
-    char outputBuffer[len];
+
 
     std::ifstream nodes;
-    nodes.rdbuf()->pubsetbuf(nodesBuffer, len);
     nodes.open(nodesFilename);
 
     std::ifstream edges;
-    edges.rdbuf()->pubsetbuf(edgesBuffer, len);
     edges.open(edgesFilename);
 
     std::ofstream output;
-    output.rdbuf()->pubsetbuf(outputBuffer, len);
-    output.open(outputFilename);
+    output.open(outputFilename, std::ios::binary);
 
+#ifdef DEBUG
+    auto startNodes = std::chrono::steady_clock::now();
+#endif
     std::vector<node> V = proceedNodes(nodes);
-    std::cout << "Nodes done" << std::endl;
     std::sort(V.begin(), V.end());
-    std::vector<edge> E = proceedEdges(edges);
+#ifdef DEBUG
+    std::cout << "Nodes done! in " << since(startNodes).count() / 1000 << "sec " << std::endl;
+#endif
 
+
+#ifdef DEBUG
+    auto startEdges = std::chrono::steady_clock::now();
+#endif
+    std::vector<edge> E = proceedEdges(edges);
 
     std::sort(E.begin(), E.end(), [](const edge &lhs, const edge &rhs) -> bool {
         if (lhs.first != rhs.first) {
@@ -198,12 +214,13 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
         }
         return lhs.second < rhs.second;
     });
-
+#ifdef DEBUG
+    std::cout << "Edges done! in " << since(startEdges).count() / 1000 << "sec " << std::endl;
+#endif
     setOffset(output, V, E);
 
     // Clear output file for correct offset
     output.close();
-    output.rdbuf()->pubsetbuf(outputBuffer, len);
     output.open(outputFilename);
 
     output << V.size() << "\n";
