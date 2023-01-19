@@ -1,4 +1,3 @@
-#!/bin/bash
 cmake . && make
 ./gen 1000 200 30
 ./solution preprocess --nodes n_gen.txt --edges e_gen.txt --output g.txt
