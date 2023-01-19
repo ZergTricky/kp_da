@@ -181,6 +181,9 @@ uint getNodePos(uint id, const std::vector<compactNode<uint>> &V) {
 }
 
 void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
+    if (E.empty()) {
+        return;
+    }
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
@@ -195,7 +198,6 @@ void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const s
             cur = i;
         }
     }
-
     uint pos = getNodePos(E[cur].first, V);
     V[pos].offset = output.tellp();
     for (uint j = cur; j < i; ++j) {
@@ -206,6 +208,10 @@ void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const s
 }
 
 void printEdges(std::ofstream &output, const std::vector<edge> &E, const std::vector<compactNode<uint>> &V) {
+    if (E.empty()) {
+        output << "\n";
+        return;
+    }
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
