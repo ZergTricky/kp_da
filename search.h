@@ -62,7 +62,7 @@ getNeighbors(uint pos, std::ifstream &graph, const long long offset, const std::
     std::vector<uint> neighbors;
     uint to;
     while (graph.tellg() != end && graph >> to) {
-        neighbors.push_back(getPos(to, V));
+        neighbors.push_back(to);
     }
 
     return neighbors;

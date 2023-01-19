@@ -175,36 +175,43 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
     return E;
 }
 
+uint getNodePos(uint id, const std::vector<compactNode<uint>> &V) {
+    compactNode<uint> s(id, 0);
+    return std::lower_bound(V.begin(), V.end(), s) - V.begin();
+}
+
 void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
         if (E[i].first != E[cur].first) {
-            compactNode<uint> s(E[cur].first, 0);
-            auto iter = std::lower_bound(V.begin(), V.end(), s);
-            iter->offset = output.tellp();
+            uint pos = getNodePos(E[cur].first, V);
+            V[pos].offset = output.tellp();
             for (uint j = cur; j < i; ++j) {
-                output << E[j].second;
+                output << getNodePos(E[j].second, V);
                 if (j + 1 < i)output << " ";
             }
             output << "\n";
             cur = i;
         }
     }
+
+    uint pos = getNodePos(E[cur].first, V);
+    V[pos].offset = output.tellp();
     for (uint j = cur; j < i; ++j) {
-        output << E[j].second;
+        output << getNodePos(E[j].second, V);
         if (j + 1 < i)output << " ";
     }
     output << "\n";
 }
 
-void printEdges(std::ofstream &output, const std::vector<edge> &E) {
+void printEdges(std::ofstream &output, const std::vector<edge> &E, const std::vector<compactNode<uint>> &V) {
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
         if (E[i].first != E[cur].first) {
             for (uint j = cur; j < i; ++j) {
-                output << E[j].second;
+                output << getNodePos(E[j].second, V);
                 if (j + 1 < i)output << " ";
             }
             output << "\n";
@@ -212,7 +219,7 @@ void printEdges(std::ofstream &output, const std::vector<edge> &E) {
         }
     }
     for (uint j = cur; j < i; ++j) {
-        output << E[j].second;
+        output << getNodePos(E[j].second, V);
         if (j + 1 < i)output << " ";
     }
     output << "\n";
@@ -288,7 +295,7 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
 
     output << V.size() << "\n";
     printNodes(output, nodes, V);
-    printEdges(output, E);
+    printEdges(output, E, V);
 }
 
 #endif //KP_DA_UTILS_H
