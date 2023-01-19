@@ -34,7 +34,10 @@ public:
 
     node(uint id) : id(id) {};
 
-    node(uint id, double phi, double lambda) : id(id), phi(rad(phi)), lambda(rad(lambda)) {}
+    node(uint id, double phi, double lambda) : node(id, phi, lambda, 0) {}
+
+    node(uint id, double phi, double lambda, uint offset) : id(id), phi(rad(phi)), lambda(rad(lambda)),
+                                                            offset(offset) {}
 
     ~node() = default;
 
@@ -61,11 +64,14 @@ private:
 
 class compactNode {
 public:
-    uint id = 0, offset = 0;
+    uint id = 0;
+    long long offset = 0;
+
+    compactNode() = default;
 
     compactNode(uint id) : id(id), offset(0) {}
 
-    compactNode(uint id, uint offset) : id(id), offset(offset) {}
+    compactNode(uint id, long long offset) : id(id), offset(offset) {}
 
     bool operator<(const compactNode &other) const {
         if (id != other.id) {
@@ -177,12 +183,13 @@ void printEdges(std::ofstream &output, const std::vector<edge> &E) {
 }
 
 void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode> &V) {
+    if (nodes.tellg() == -1)nodes.clear();
     nodes.seekg(0);
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
         auto iter = std::lower_bound(V.begin(), V.end(), id);
-        output << iter->id << " " << phi << " " << lambda << " " << iter->offset;
+        output << iter->id << " " << phi << " " << lambda << " " << iter->offset << "\n";
     }
 }
 
@@ -204,15 +211,10 @@ void
 prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, const std::string &outputFilename) {
 
 
-    std::ifstream nodes;
-    nodes.open(nodesFilename);
+    std::ifstream nodes(nodesFilename);
 
-    std::ifstream edges;
-    edges.open(edgesFilename);
-
-    std::ofstream output;
-    output.open(outputFilename, std::ios::binary);
-
+    std::ifstream edges(edgesFilename);
+    std::ofstream output(outputFilename, std::ios::binary);
 #ifdef DEBUG
     auto startNodes = std::chrono::steady_clock::now();
 #endif

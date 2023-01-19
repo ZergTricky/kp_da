@@ -3,7 +3,7 @@
 #include "astar.h"
 
 int main(int argc, char **argv) {
-    prepareFile("europe.nodes", "europe.edges", "g.txt");
-//    solve("g.txt", "query.txt", "res.txt");
+//    prepareFile("n.txt", "e.txt", "g.txt");
+    solve("g_europe.txt", "query.txt", "res.txt");
     return 0;
 }
