@@ -176,38 +176,26 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
 }
 
 void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
-    uint last;
-    std::vector<uint> cur;
-    for (uint i = 0; i < E.size(); ++i) {
-        if (i == 0 || E[i].first != last) {
-            if (!cur.empty()) {
-                compactNode<uint> s(last, 0);
-                auto iter = std::lower_bound(V.begin(), V.end(), s);
-                iter->offset = output.tellp();
-
-                for (uint j = 0; j < cur.size(); ++j) {
-                    output << cur[j];
-                    if (j + 1 < cur.size())output << " ";
-                }
-                output << "\n";
+    uint cur = 0;
+    uint i;
+    for (i = 0; i < E.size(); ++i) {
+        if (E[i].first != E[cur].first) {
+            compactNode<uint> s(E[cur].first, 0);
+            auto iter = std::lower_bound(V.begin(), V.end(), s);
+            iter->offset = output.tellp();
+            for (uint j = cur; j < i; ++j) {
+                output << E[j].second;
+                if (j + 1 < i)output << " ";
             }
-            cur.clear();
+            output << "\n";
+            cur = i;
         }
-        cur.emplace_back(E[i].second);
-
-        last = E[i].first;
     }
-    if (!cur.empty()) {
-        compactNode<uint> s(last, 0);
-        auto iter = std::lower_bound(V.begin(), V.end(), s);
-        iter->offset = output.tellp();
-
-        for (uint j = 0; j < cur.size(); ++j) {
-            output << cur[j];
-            if (j + 1 < cur.size())output << " ";
-        }
-        output << "\n";
+    for (uint j = cur; j < i; ++j) {
+        output << E[j].second;
+        if (j + 1 < i)output << " ";
     }
+    output << "\n";
 }
 
 void printEdges(std::ofstream &output, const std::vector<edge> &E) {

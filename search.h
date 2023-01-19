@@ -44,7 +44,6 @@ node getNode(uint pos, std::ifstream &graph, const std::vector<compactNode<long 
     graph >> id >> phi >> lambda >> offset;
 
     if (id != V[pos].id) {
-        std::cout << pos << std::endl;
         assert(id == V[pos].id);
     }
 
@@ -62,7 +61,7 @@ getNeighbors(uint pos, std::ifstream &graph, const long long offset, const std::
 
     std::vector<uint> neighbors;
     uint to;
-    while (graph.tellg() < end && graph >> to) {
+    while (graph.tellg() != end && graph >> to) {
         neighbors.push_back(getPos(to, V));
     }
 
