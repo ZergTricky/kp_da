@@ -5,8 +5,6 @@
 #include "search.h"
 
 int main(int argc, char **argv) {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
     if (argc < 8) {
         std::cout << "Not enough parameters" << "\n";
         return 1;

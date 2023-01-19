@@ -55,7 +55,6 @@ public:
         return os;
     }
 
-private:
     double phi = 0;
     double lambda = 0;
 
@@ -107,63 +106,61 @@ struct custom_hash {
 };
 
 
-uint countNodes(std::ifstream &nodes) {
+uint countNodes(FILE *nodes) {
     uint cnt = 0;
     uint id;
     double phi, lambda;
-    while (nodes >> id >> phi >> lambda) {
+    while (fscanf(nodes, "%u%lf%lf", &id, &phi, &lambda) > 0) {
         ++cnt;
     }
 
-    nodes.clear();
-    nodes.seekg(0);
+    fseek(nodes, 0, 0);
 
     return cnt;
 }
 
-std::vector<compactNode<uint>> proceedNodes(std::ifstream &nodes) {
+std::vector<compactNode<uint>> proceedNodes(FILE *nodes) {
     uint N = countNodes(nodes);
     uint next = 0;
     std::vector<compactNode<uint>> V(N);
 
     uint id;
     double phi, lambda;
-    while (nodes >> id >> phi >> lambda) {
+    while (fscanf(nodes, "%u%lf%lf", &id, &phi, &lambda) > 0) {
         V[next++] = id;
     }
 
     return V;
 }
 
-uint countEdges(std::ifstream &edges) {
+uint countEdges(FILE *edges) {
     uint cnt = 0;
     uint k;
-    while (edges >> k) {
+    while (fscanf(edges, "%u", &k) > 0) {
         for (uint i = 0; i < k; ++i) {
             uint _;
-            edges >> _;
+            fscanf(edges, "%u", &_);
             if (i > 0) {
                 cnt += 2;
             }
         }
     }
-    edges.clear();
-    edges.seekg(0);
+    fseek(edges, 0, 0);
 
     return cnt;
 }
 
-std::vector<edge> proceedEdges(std::ifstream &edges) {
+std::vector<edge> proceedEdges(FILE *edges) {
     uint N = countEdges(edges);
     uint next = 0;
     std::vector<edge> E(N);
 
     uint k;
-    while (edges >> k) {
+    while (fscanf(edges, "%u", &k) > 0) {
         uint last;
         for (uint i = 0; i < k; ++i) {
             uint cur;
-            edges >> cur;
+            fscanf(edges, "%u", &cur);
             if (i > 0) {
                 E[next++] = {last, cur};
                 E[next++] = {cur, last};
@@ -180,61 +177,72 @@ uint getNodePos(uint id, const std::vector<compactNode<uint>> &V) {
     return std::lower_bound(V.begin(), V.end(), s) - V.begin();
 }
 
-void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
+void setOffset(FILE *output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
         if (E[i].first != E[cur].first) {
             uint pos = getNodePos(E[cur].first, V);
-            V[pos].offset = output.tellp();
+            V[pos].offset = ftell(output);
             for (uint j = cur; j < i; ++j) {
-                output << getNodePos(E[j].second, V);
-                if (j + 1 < i)output << " ";
+                uint p = getNodePos(E[j].second, V);
+                fprintf(output, "%u", p);
+                if (j + 1 < i) {
+                    fprintf(output, " ");
+                }
             }
-            output << "\n";
+            fprintf(output, "\n");
             cur = i;
         }
     }
 
     uint pos = getNodePos(E[cur].first, V);
-    V[pos].offset = output.tellp();
+    V[pos].offset = ftell(output);
     for (uint j = cur; j < i; ++j) {
-        output << getNodePos(E[j].second, V);
-        if (j + 1 < i)output << " ";
+        uint p = getNodePos(E[j].second, V);
+        fprintf(output, "%u", p);
+        if (j + 1 < i) {
+            fprintf(output, " ");
+        }
     }
-    output << "\n";
+    fprintf(output, "\n");
 }
 
-void printEdges(std::ofstream &output, const std::vector<edge> &E, const std::vector<compactNode<uint>> &V) {
+void printEdges(FILE *output, const std::vector<edge> &E, const std::vector<compactNode<uint>> &V) {
     uint cur = 0;
     uint i;
     for (i = 0; i < E.size(); ++i) {
         if (E[i].first != E[cur].first) {
             for (uint j = cur; j < i; ++j) {
-                output << getNodePos(E[j].second, V);
-                if (j + 1 < i)output << " ";
+                uint p = getNodePos(E[j].second, V);
+                fprintf(output, "%u", p);
+                if (j + 1 < i) {
+                    fprintf(output, " ");
+                }
             }
-            output << "\n";
+            fprintf(output, "\n");
             cur = i;
         }
     }
     for (uint j = cur; j < i; ++j) {
-        output << getNodePos(E[j].second, V);
-        if (j + 1 < i)output << " ";
+        uint p = getNodePos(E[j].second, V);
+        fprintf(output, "%u", p);
+        if (j + 1 < i) {
+            fprintf(output, " ");
+        }
     }
-    output << "\n";
+    fprintf(output, "\n");
 }
 
-void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode<uint>> &V) {
-    if (nodes.tellg() == -1)nodes.clear();
-    nodes.seekg(0);
+void printNodes(FILE *output, FILE *nodes, const std::vector<compactNode<uint>> &V) {
+    fseek(nodes, 0, 0);
     uint id;
     double phi, lambda;
-    while (nodes >> id >> phi >> lambda) {
+    while (fscanf(nodes, "%u%lf%lf", &id, &phi, &lambda) > 0) {
         compactNode<uint> s(id, 0);
         auto iter = std::lower_bound(V.begin(), V.end(), s);
         assert(iter->id == id);
-        output << iter->id << " " << phi << " " << lambda << " " << iter->offset << "\n";
+        fprintf(output, "%u %lf %lf %u\n", iter->id, phi, lambda, iter->offset);
     }
 }
 
@@ -254,9 +262,9 @@ auto since(std::chrono::time_point<clock_t, duration_t> const &start) {
 
 void
 prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, const std::string &outputFilename) {
-    std::ifstream nodes(nodesFilename, std::ios::in);
-    std::ifstream edges(edgesFilename, std::ios::in);
-    std::ofstream output(outputFilename, std::ios::binary | std::ios::out);
+    FILE *nodes = fopen(nodesFilename.c_str(), "r");
+    FILE *edges = fopen(edgesFilename.c_str(), "r");
+    FILE *output = fopen(outputFilename.c_str(), "w");
 
 #ifdef DEBUG
     auto startNodes = std::chrono::steady_clock::now();
@@ -290,12 +298,16 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
     }
 
     // Clear output file for correct offset
-    output.close();
-    output.open(outputFilename);
+    fclose(output);
+    output = fopen(outputFilename.c_str(), "w");
 
-    output << V.size() << "\n";
+    fprintf(output, "%u\n", (uint) V.size());
     printNodes(output, nodes, V);
     printEdges(output, E, V);
+
+    fclose(nodes);
+    fclose(edges);
+    fclose(output);
 }
 
 #endif //KP_DA_UTILS_H

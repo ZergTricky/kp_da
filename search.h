@@ -12,14 +12,14 @@
 #include "iomanip"
 
 
-std::vector<compactNode<long long>> readNodes(std::ifstream &graph) {
+std::vector<compactNode<long long>> readNodes(FILE *graph) {
     uint numberOfNodes;
-    graph >> numberOfNodes;
+    fscanf(graph, "%u", &numberOfNodes);
     std::vector<compactNode<long long>> V(numberOfNodes);
     for (uint i = 0; i < numberOfNodes; ++i) {
-        long long offset = graph.tellg();
+        long long offset = ftell(graph);
         node v;
-        graph >> v;
+        fscanf(graph, "%u %lf %lf %u", &v.id, &v.phi, &v.lambda, &v.offset);
         V[i] = compactNode(v.id, offset);
     }
 
@@ -35,13 +35,13 @@ uint getPos(uint id, const std::vector<compactNode<long long>> &V) {
 /*
  * Getting node by position
  */
-node getNode(uint pos, std::ifstream &graph, const std::vector<compactNode<long long>> &V) {
-    if (graph.tellg() == -1)graph.clear();
-    graph.seekg(V[pos].offset, std::ifstream::beg);
+node getNode(uint pos, FILE *graph, const std::vector<compactNode<long long>> &V) {
+
+    fseek(graph, V[pos].offset, 0);
 
     uint id, offset;
     double phi, lambda;
-    graph >> id >> phi >> lambda >> offset;
+    fscanf(graph, "%u%lf%lf%u", &id, &phi, &lambda, &offset);
 
     if (id != V[pos].id) {
         assert(id == V[pos].id);
@@ -51,17 +51,16 @@ node getNode(uint pos, std::ifstream &graph, const std::vector<compactNode<long 
 }
 
 std::vector<uint>
-getNeighbors(uint pos, std::ifstream &graph, const long long offset, const std::vector<compactNode<long long>> &V) {
+getNeighbors(uint pos, FILE *graph, const long long offset, const std::vector<compactNode<long long>> &V) {
 
     long long end = (pos + 1 < V.size() ? (long long) getNode(pos + 1, graph, V).offset : -1) + offset;
     long long newPosition = offset + (long long) getNode(pos, graph, V).offset;
 
-    if (graph.tellg() == -1)graph.clear();
-    graph.seekg(newPosition, std::ifstream::beg);
+    fseek(graph, newPosition, 0);
 
     std::vector<uint> neighbors;
     uint to;
-    while (graph.tellg() != end && graph >> to) {
+    while (ftell(graph) != end && fscanf(graph, "%u", &to) > 0) {
         neighbors.push_back(to);
     }
 
@@ -69,14 +68,14 @@ getNeighbors(uint pos, std::ifstream &graph, const long long offset, const std::
 }
 
 
-double h(std::ifstream &graph, const std::vector<compactNode<long long>> &V, uint startPos, node finishNode) {
+double h(FILE *graph, const std::vector<compactNode<long long>> &V, uint startPos, node finishNode) {
     return dist(getNode(startPos, graph, V), finishNode);
 }
 
 void
-find(std::ifstream &graph, const long long offset, const std::vector<compactNode<long long>> &V, const uint start,
+find(FILE *graph, const long long offset, const std::vector<compactNode<long long>> &V, const uint start,
      const uint finish,
-     std::ofstream &output, bool isDetailed) {
+     FILE *output, bool isDetailed) {
 
 #ifdef DEBUG
     std::cout << "Searching: " << start << " " << finish << std::endl;
@@ -109,6 +108,7 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
         s.insert(source);
 
         std::vector<uint> neighbors = getNeighbors(source, graph, offset, V);
+        assert(neighbors.size() < 50);
 
         node sourceNode = getNode(source, graph, V);
 
@@ -121,14 +121,13 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
             }
         }
     }
-    output << std::fixed << std::setprecision(7);
     if (!d.contains(finishPos)) {
-        output << "-1\n";
+        fprintf(output, "-1\n");
         if (isDetailed) {
-            output << "0" << "\n";
+            fprintf(output, "0\n");
         }
     } else {
-        output << d[finishPos] << "\n";
+        fprintf(output, "%.15f\n", d[finishPos]);
         if (isDetailed) {
             std::vector<uint> path;
             for (uint cur = finishPos;; cur = prev[cur]) {
@@ -136,21 +135,21 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
                 if (cur == startPos)break;
             }
             std::reverse(path.begin(), path.end());
-            output << path.size() << " ";
+            fprintf(output, "%u ", (uint) path.size());
             for (auto &pos: path) {
                 pos = V[pos].id;
-                output << pos << " ";
+                fprintf(output, "%u ", pos);
             }
-            output << "\n";
+            fprintf(output, "\n");
         }
     }
 }
 
 void solve(const std::string &graphFilename, const std::string &inputFilename, const std::string &outputFilename,
            bool isDetailed = false) {
-    std::ifstream graph(graphFilename, std::ios::binary);
-    std::ifstream input(inputFilename);
-    std::ofstream output(outputFilename, std::ios::binary);
+    FILE *graph = fopen(graphFilename.c_str(), "rb");
+    FILE *input = fopen(inputFilename.c_str(), "r");
+    FILE *output = fopen(outputFilename.c_str(), "wb");
 
 #ifdef DEBUG
     auto startNodes = std::chrono::steady_clock::now();
@@ -163,12 +162,16 @@ void solve(const std::string &graphFilename, const std::string &inputFilename, c
     std::cout << "Nodes done in " << since(startNodes).count() / 1000 << " sec" << std::endl;
 #endif
 
-    long long offset = graph.tellg();
+    long long offset = ftell(graph);
 
     uint start, finish;
-    while (input >> start >> finish) {
+    while (fscanf(input, "%u %u", &start, &finish) > 0) {
         find(graph, offset, V, start, finish, output, isDetailed);
     }
+
+    fclose(graph);
+    fclose(input);
+    fclose(output);
 }
 
 #endif //KP_DA_ASTAR_CPP
