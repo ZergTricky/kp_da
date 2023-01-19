@@ -1,9 +1,11 @@
 #include "iostream"
 #include "utils.h"
-#include "astar.h"
+#include "search.h"
 
 int main(int argc, char **argv) {
-//    prepareFile("n.txt", "e.txt", "g.txt");
-    solve("g_europe.txt", "query.txt", "res.txt");
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    prepareFile("n_gen.txt", "e_gen.txt", "g.txt");
+    solve("g.txt", "q_gen.txt", "res.txt", true);
     return 0;
 }

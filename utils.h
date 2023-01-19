@@ -1,17 +1,17 @@
 //
 // Created by egorb on 18.01.2023.
 //
-
 #ifndef KP_DA_UTILS_H
 #define KP_DA_UTILS_H
 
 #include <chrono>
+#include "iostream"
 #include "fstream"
 #include "cmath"
 #include "cassert"
 #include "vector"
+#include "string"
 
-#include "iostream"
 
 #define DEBUG
 
@@ -28,7 +28,7 @@ inline double rad(double angle) {
 class node {
 public:
     uint id{};
-    uint offset = 0;
+    uint offset = UINT32_MAX;
 
     node() = default;
 
@@ -36,8 +36,8 @@ public:
 
     node(uint id, double phi, double lambda) : node(id, phi, lambda, 0) {}
 
-    node(uint id, double phi, double lambda, uint offset) : id(id), phi(rad(phi)), lambda(rad(lambda)),
-                                                            offset(offset) {}
+    node(uint id, double phi, double lambda, uint offset) : id(id), offset(offset), phi(rad(phi)),
+                                                            lambda(rad(lambda)) {}
 
     ~node() = default;
 
@@ -59,19 +59,20 @@ private:
     double phi = 0;
     double lambda = 0;
 
-    friend double dist(node, node);
+    friend double dist(const node &, const node &);
 };
 
+template<typename T>
 class compactNode {
 public:
     uint id = 0;
-    long long offset = 0;
+    T offset = UINT32_MAX;
 
     compactNode() = default;
 
-    compactNode(uint id) : id(id), offset(0) {}
+    compactNode(uint id) : id(id) {}
 
-    compactNode(uint id, long long offset) : id(id), offset(offset) {}
+    compactNode(uint id, T offset) : id(id), offset(offset) {}
 
     bool operator<(const compactNode &other) const {
         if (id != other.id) {
@@ -81,17 +82,34 @@ public:
     }
 };
 
-using edge = std::pair<uint, uint>;
-
-double dist(node a, node b) {
+double dist(const node &a, const node &b) {
     double cosd = sin(a.phi) * sin(b.phi) + cos(a.phi) * cos(b.phi) * cos(a.lambda - b.lambda);
     assert(fabs(cosd) < 1 + eps);
     double d = acos(cosd);
     return R * d;
 }
 
-std::vector<compactNode> proceedNodes(std::ifstream &nodes) {
-    std::vector<compactNode> V;
+using edge = std::pair<uint, uint>;
+
+struct custom_hash {
+    static uint64_t splitmix64(uint64_t x) {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+
+std::vector<compactNode<uint>> proceedNodes(std::ifstream &nodes) {
+    std::vector<compactNode<uint>> V;
+
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
@@ -104,7 +122,7 @@ std::vector<compactNode> proceedNodes(std::ifstream &nodes) {
 
 std::vector<edge> proceedEdges(std::ifstream &edges) {
     std::vector<edge> E;
-    int k;
+    uint k;
     while (edges >> k) {
         uint last;
         for (uint i = 0; i < k; ++i) {
@@ -122,13 +140,14 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
     return E;
 }
 
-void setOffset(std::ofstream &output, std::vector<compactNode> &V, const std::vector<edge> &E) {
+void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const std::vector<edge> &E) {
     uint last;
     std::vector<uint> cur;
     for (uint i = 0; i < E.size(); ++i) {
         if (i == 0 || E[i].first != last) {
             if (!cur.empty()) {
-                auto iter = std::lower_bound(V.begin(), V.end(), last);
+                compactNode<uint> s(last, 0);
+                auto iter = std::lower_bound(V.begin(), V.end(), s);
                 iter->offset = output.tellp();
 
                 for (uint j = 0; j < cur.size(); ++j) {
@@ -144,7 +163,8 @@ void setOffset(std::ofstream &output, std::vector<compactNode> &V, const std::ve
         last = E[i].first;
     }
     if (!cur.empty()) {
-        auto iter = std::lower_bound(V.begin(), V.end(), last);
+        compactNode<uint> s(last, 0);
+        auto iter = std::lower_bound(V.begin(), V.end(), s);
         iter->offset = output.tellp();
 
         for (uint j = 0; j < cur.size(); ++j) {
@@ -182,13 +202,15 @@ void printEdges(std::ofstream &output, const std::vector<edge> &E) {
     }
 }
 
-void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode> &V) {
+void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode<uint>> &V) {
     if (nodes.tellg() == -1)nodes.clear();
     nodes.seekg(0);
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
-        auto iter = std::lower_bound(V.begin(), V.end(), id);
+        compactNode<uint> s(id, 0);
+        auto iter = std::lower_bound(V.begin(), V.end(), s);
+        assert(iter->id == id);
         output << iter->id << " " << phi << " " << lambda << " " << iter->offset << "\n";
     }
 }
@@ -209,19 +231,17 @@ auto since(std::chrono::time_point<clock_t, duration_t> const &start) {
 
 void
 prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, const std::string &outputFilename) {
+    std::ifstream nodes(nodesFilename, std::ios::in);
+    std::ifstream edges(edgesFilename, std::ios::in);
+    std::ofstream output(outputFilename, std::ios::binary | std::ios::out);
 
-
-    std::ifstream nodes(nodesFilename);
-
-    std::ifstream edges(edgesFilename);
-    std::ofstream output(outputFilename, std::ios::binary);
 #ifdef DEBUG
     auto startNodes = std::chrono::steady_clock::now();
 #endif
-    std::vector<compactNode> V = proceedNodes(nodes);
+    std::vector<compactNode<uint>> V = proceedNodes(nodes);
     std::sort(V.begin(), V.end());
 #ifdef DEBUG
-    std::cout << "Nodes done! in " << since(startNodes).count() / 1000 << "sec " << std::endl;
+    std::cout << "Nodes done in " << since(startNodes).count() / 1000 << " sec" << std::endl;
 #endif
 
 
@@ -237,9 +257,12 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
         return lhs.second < rhs.second;
     });
 #ifdef DEBUG
-    std::cout << "Edges done! in " << since(startEdges).count() / 1000 << "sec " << std::endl;
+    std::cout << "Edges done in " << since(startEdges).count() / 1000 << " sec" << std::endl;
 #endif
     setOffset(output, V, E);
+    for (int i = (int) V.size() - 2; i >= 0; --i) {
+        V[i].offset = std::min(V[i].offset, V[i + 1].offset);
+    }
 
     // Clear output file for correct offset
     output.close();

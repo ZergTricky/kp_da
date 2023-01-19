@@ -129,6 +129,56 @@ kp_da/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/build
 .PHONY : kp_da/fast
 
+#=============================================================================
+# Target rules for targets named gen
+
+# Build rule for target.
+gen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gen
+.PHONY : gen
+
+# fast build rule for target.
+gen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gen.dir/build.make CMakeFiles/gen.dir/build
+.PHONY : gen/fast
+
+#=============================================================================
+# Target rules for targets named validator
+
+# Build rule for target.
+validator: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 validator
+.PHONY : validator
+
+# fast build rule for target.
+validator/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/validator.dir/build.make CMakeFiles/validator.dir/build
+.PHONY : validator/fast
+
+gen.o: gen.cpp.o
+.PHONY : gen.o
+
+# target to build an object file
+gen.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gen.dir/build.make CMakeFiles/gen.dir/gen.cpp.o
+.PHONY : gen.cpp.o
+
+gen.i: gen.cpp.i
+.PHONY : gen.i
+
+# target to preprocess a source file
+gen.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gen.dir/build.make CMakeFiles/gen.dir/gen.cpp.i
+.PHONY : gen.cpp.i
+
+gen.s: gen.cpp.s
+.PHONY : gen.s
+
+# target to generate assembly for a file
+gen.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gen.dir/build.make CMakeFiles/gen.dir/gen.cpp.s
+.PHONY : gen.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -153,6 +203,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+validator.o: validator.cpp.o
+.PHONY : validator.o
+
+# target to build an object file
+validator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/validator.dir/build.make CMakeFiles/validator.dir/validator.cpp.o
+.PHONY : validator.cpp.o
+
+validator.i: validator.cpp.i
+.PHONY : validator.i
+
+# target to preprocess a source file
+validator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/validator.dir/build.make CMakeFiles/validator.dir/validator.cpp.i
+.PHONY : validator.cpp.i
+
+validator.s: validator.cpp.s
+.PHONY : validator.s
+
+# target to generate assembly for a file
+validator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/validator.dir/build.make CMakeFiles/validator.dir/validator.cpp.s
+.PHONY : validator.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -161,10 +235,18 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... gen"
 	@echo "... kp_da"
+	@echo "... validator"
+	@echo "... gen.o"
+	@echo "... gen.i"
+	@echo "... gen.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... validator.o"
+	@echo "... validator.i"
+	@echo "... validator.s"
 .PHONY : help
 
 
