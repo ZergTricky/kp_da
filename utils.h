@@ -107,21 +107,57 @@ struct custom_hash {
 };
 
 
+uint countNodes(std::ifstream &nodes) {
+    uint cnt = 0;
+    uint id;
+    double phi, lambda;
+    while (nodes >> id >> phi >> lambda) {
+        ++cnt;
+    }
+
+    nodes.clear();
+    nodes.seekg(0);
+
+    return cnt;
+}
+
 std::vector<compactNode<uint>> proceedNodes(std::ifstream &nodes) {
-    std::vector<compactNode<uint>> V;
+    uint N = countNodes(nodes);
+    uint next = 0;
+    std::vector<compactNode<uint>> V(N);
 
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
-        V.emplace_back(id);
+        V[next++] = id;
     }
-    V.shrink_to_fit();
 
     return V;
 }
 
+uint countEdges(std::ifstream &edges) {
+    uint cnt = 0;
+    uint k;
+    while (edges >> k) {
+        for (uint i = 0; i < k; ++i) {
+            uint _;
+            edges >> _;
+            if (i > 0) {
+                cnt += 2;
+            }
+        }
+    }
+    edges.clear();
+    edges.seekg(0);
+
+    return cnt;
+}
+
 std::vector<edge> proceedEdges(std::ifstream &edges) {
-    std::vector<edge> E;
+    uint N = countEdges(edges);
+    uint next = 0;
+    std::vector<edge> E(N);
+
     uint k;
     while (edges >> k) {
         uint last;
@@ -129,13 +165,12 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
             uint cur;
             edges >> cur;
             if (i > 0) {
-                E.emplace_back(last, cur);
-                E.emplace_back(cur, last);
+                E[next++] = {last, cur};
+                E[next++] = {cur, last};
             }
             last = cur;
         }
     }
-    E.shrink_to_fit();
 
     return E;
 }
@@ -176,30 +211,23 @@ void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const s
 }
 
 void printEdges(std::ofstream &output, const std::vector<edge> &E) {
-    uint last;
-    std::vector<uint> cur;
-    for (uint i = 0; i < E.size(); ++i) {
-        if (i == 0 || E[i].first != last) {
-            if (!cur.empty()) {
-                for (uint j = 0; j < cur.size(); ++j) {
-                    output << cur[j];
-                    if (j + 1 < cur.size())output << " ";
-                }
-                output << "\n";
+    uint cur = 0;
+    uint i;
+    for (i = 0; i < E.size(); ++i) {
+        if (E[i].first != E[cur].first) {
+            for (uint j = cur; j < i; ++j) {
+                output << E[j].second;
+                if (j + 1 < i)output << " ";
             }
-            cur.clear();
+            output << "\n";
+            cur = i;
         }
-        cur.emplace_back(E[i].second);
-
-        last = E[i].first;
     }
-    if (!cur.empty()) {
-        for (uint j = 0; j < cur.size(); ++j) {
-            output << cur[j];
-            if (j + 1 < cur.size())output << " ";
-        }
-        output << "\n";
+    for (uint j = cur; j < i; ++j) {
+        output << E[j].second;
+        if (j + 1 < i)output << " ";
     }
+    output << "\n";
 }
 
 void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode<uint>> &V) {
@@ -249,7 +277,9 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
     auto startEdges = std::chrono::steady_clock::now();
 #endif
     std::vector<edge> E = proceedEdges(edges);
-
+#ifdef DEBUG
+    std::cout << "Edges read in " << since(startEdges).count() / 1000 << " sec" << std::endl;
+#endif
     std::sort(E.begin(), E.end(), [](const edge &lhs, const edge &rhs) -> bool {
         if (lhs.first != rhs.first) {
             return lhs.first < rhs.first;

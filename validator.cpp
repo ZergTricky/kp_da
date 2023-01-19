@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
         if (!D.contains(q[cur].second)) {
             assert(fabs(d + 1) < eps);
         } else {
+            std::cout << d << " " << D[q[cur].second] << std::endl;
             assert(fabs(d - D[q[cur].second]) < eps);
         }
 
