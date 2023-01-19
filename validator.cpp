@@ -113,6 +113,6 @@ int main(int argc, char **argv) {
 
         ++cur;
     }
-    cout << "OK" << endl;
+    cout << "VALIDATION OK" << endl;
     return 0;
 }

@@ -30,9 +30,12 @@ int main(int argc, char **argv) {
     ofstream edges("e_gen.txt");
     ofstream queries("q_gen.txt");
 
+    vector<ll> p(n);
+    iota(p.begin(), p.end(), 0);
+    shuffle(p.begin(), p.end(), rng);
 
     for (int i = 0; i < n; ++i) {
-        nodes << i + 1 << " " << rng() % 90 << " " << rng() % 90 << "\n";
+        nodes << p[i] + 1 << " " << rng() % 90 << " " << rng() % 90 << "\n";
     }
     for (int i = 0; i < m; ++i) {
         int k = rng() % 4 + 2;

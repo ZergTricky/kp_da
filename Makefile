@@ -117,17 +117,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named kp_da
+# Target rules for targets named solution
 
 # Build rule for target.
-kp_da: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 kp_da
-.PHONY : kp_da
+solution: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 solution
+.PHONY : solution
 
 # fast build rule for target.
-kp_da/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/build
-.PHONY : kp_da/fast
+solution/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solution.dir/build.make CMakeFiles/solution.dir/build
+.PHONY : solution/fast
 
 #=============================================================================
 # Target rules for targets named gen
@@ -184,7 +184,7 @@ main.o: main.cpp.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solution.dir/build.make CMakeFiles/solution.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -192,7 +192,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solution.dir/build.make CMakeFiles/solution.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -200,7 +200,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/kp_da.dir/build.make CMakeFiles/kp_da.dir/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solution.dir/build.make CMakeFiles/solution.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 validator.o: validator.cpp.o
@@ -236,7 +236,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... gen"
-	@echo "... kp_da"
+	@echo "... solution"
 	@echo "... validator"
 	@echo "... gen.o"
 	@echo "... gen.i"
