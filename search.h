@@ -14,12 +14,15 @@
 
 std::vector<compactNode<long long>> readNodes(std::ifstream &graph) {
     uint numberOfNodes;
-    graph >> numberOfNodes;
+    graph.read(reinterpret_cast<char *>(&numberOfNodes), sizeof(numberOfNodes));
     std::vector<compactNode<long long>> V(numberOfNodes);
     for (uint i = 0; i < numberOfNodes; ++i) {
         long long offset = graph.tellg();
         node v;
-        graph >> v;
+        graph.read(reinterpret_cast<char *>(&v.id), sizeof(v.id));
+        graph.read(reinterpret_cast<char *>(&v.phi), sizeof(v.phi));
+        graph.read(reinterpret_cast<char *>(&v.lambda), sizeof(v.lambda));
+        graph.read(reinterpret_cast<char *>(&v.offset), sizeof(v.offset));
         V[i] = compactNode(v.id, offset);
     }
 
@@ -41,7 +44,10 @@ node getNode(uint pos, std::ifstream &graph, const std::vector<compactNode<long 
 
     uint id, offset;
     double phi, lambda;
-    graph >> id >> phi >> lambda >> offset;
+    graph.read(reinterpret_cast<char *>(&id), sizeof(id));
+    graph.read(reinterpret_cast<char *>(&phi), sizeof(phi));
+    graph.read(reinterpret_cast<char *>(&lambda), sizeof(lambda));
+    graph.read(reinterpret_cast<char *>(&offset), sizeof(offset));
 
     if (id != V[pos].id) {
         assert(id == V[pos].id);
@@ -61,7 +67,7 @@ getNeighbors(uint pos, std::ifstream &graph, const long long offset, const std::
 
     std::vector<uint> neighbors;
     uint to;
-    while (graph.tellg() != end && graph >> to) {
+    while (graph.tellg() != end && graph.read(reinterpret_cast<char *>(&to), sizeof(to))) {
         neighbors.push_back(to);
     }
 
@@ -80,9 +86,8 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
     uint finishPos = getPos(finish, V);
     node finishNode = getNode(finishPos, graph, V);
 
-    std::unordered_map<uint, double, custom_hash> d;
-    std::unordered_map<uint, uint, custom_hash> prev;
-    std::unordered_set<uint> s;
+    std::vector<double> d(V.size(), -1);
+    std::vector<uint> prev(V.size());
 
     std::priority_queue<std::pair<double, uint>, std::vector<std::pair<double, uint>>, std::greater<>> pq;
 
@@ -102,7 +107,6 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
         if (w > d[source] + h(graph, V, source, finishNode) + eps) {
             continue;
         }
-        s.insert(source);
 
         std::vector<uint> neighbors = getNeighbors(source, graph, offset, V);
 
@@ -110,7 +114,7 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
 
         for (const auto &destination: neighbors) {
             double weight = dist(sourceNode, getNode(destination, graph, V));
-            if (!d.contains(destination) || d[destination] > d[source] + weight + eps) {
+            if (fabs(d[destination] + 1) < eps || d[destination] > d[source] + weight + eps) {
                 d[destination] = d[source] + weight;
                 prev[destination] = source;
                 pq.emplace(d[destination] + h(graph, V, destination, finishNode), destination);
@@ -118,7 +122,7 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
         }
     }
     output << std::fixed << std::setprecision(7);
-    if (!d.contains(finishPos)) {
+    if (fabs(d[finishPos] + 1) < eps) {
         output << "-1\n";
         if (isDetailed) {
             output << "0" << "\n";
@@ -126,6 +130,9 @@ find(std::ifstream &graph, const long long offset, const std::vector<compactNode
     } else {
         output << d[finishPos] << "\n";
         if (isDetailed) {
+            d.clear();
+            d.shrink_to_fit();
+
             std::vector<uint> path;
             for (uint cur = finishPos;; cur = prev[cur]) {
                 path.push_back(cur);
@@ -146,7 +153,7 @@ void solve(const std::string &graphFilename, const std::string &inputFilename, c
            bool isDetailed = false) {
     std::ifstream graph(graphFilename, std::ios::binary);
     std::ifstream input(inputFilename);
-    std::ofstream output(outputFilename, std::ios::binary);
+    std::ofstream output(outputFilename);
 
 
     std::vector<compactNode<long long>> V = readNodes(graph);
