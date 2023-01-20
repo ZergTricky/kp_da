@@ -53,7 +53,6 @@ public:
         return os;
     }
 
-private:
     double phi = 0;
     double lambda = 0;
 
@@ -120,15 +119,14 @@ uint countNodes(std::ifstream &nodes) {
 }
 
 std::vector<compactNode<uint>> proceedNodes(std::ifstream &nodes) {
-    uint N = countNodes(nodes);
-    uint next = 0;
-    std::vector<compactNode<uint>> V(N);
+    std::vector<compactNode<uint>> V;
 
     uint id;
     double phi, lambda;
     while (nodes >> id >> phi >> lambda) {
-        V[next++] = id;
+        V.emplace_back(id);
     }
+    V.shrink_to_fit();
 
     return V;
 }
@@ -152,9 +150,7 @@ uint countEdges(std::ifstream &edges) {
 }
 
 std::vector<edge> proceedEdges(std::ifstream &edges) {
-    uint N = countEdges(edges);
-    uint next = 0;
-    std::vector<edge> E(N);
+    std::vector<edge> E;
 
     uint k;
     while (edges >> k) {
@@ -163,8 +159,8 @@ std::vector<edge> proceedEdges(std::ifstream &edges) {
             uint cur;
             edges >> cur;
             if (i > 0) {
-                E[next++] = {last, cur};
-                E[next++] = {cur, last};
+                E.emplace_back(last, cur);
+                E.emplace_back(cur, last);
             }
             last = cur;
         }
@@ -189,25 +185,22 @@ void setOffset(std::ofstream &output, std::vector<compactNode<uint>> &V, const s
             uint pos = getNodePos(E[cur].first, V);
             V[pos].offset = output.tellp();
             for (uint j = cur; j < i; ++j) {
-                output << getNodePos(E[j].second, V);
-                if (j + 1 < i)output << " ";
+                uint p = getNodePos(E[j].second, V);
+                output.write(reinterpret_cast<const char *>(&p), sizeof(p));
             }
-            output << "\n";
             cur = i;
         }
     }
     uint pos = getNodePos(E[cur].first, V);
     V[pos].offset = output.tellp();
     for (uint j = cur; j < i; ++j) {
-        output << getNodePos(E[j].second, V);
-        if (j + 1 < i)output << " ";
+        uint p = getNodePos(E[j].second, V);
+        output.write(reinterpret_cast<const char *>(&p), sizeof(p));
     }
-    output << "\n";
 }
 
 void printEdges(std::ofstream &output, const std::vector<edge> &E, const std::vector<compactNode<uint>> &V) {
     if (E.empty()) {
-        output << "\n";
         return;
     }
     uint cur = 0;
@@ -215,18 +208,16 @@ void printEdges(std::ofstream &output, const std::vector<edge> &E, const std::ve
     for (i = 0; i < E.size(); ++i) {
         if (E[i].first != E[cur].first) {
             for (uint j = cur; j < i; ++j) {
-                output << getNodePos(E[j].second, V);
-                if (j + 1 < i)output << " ";
+                auto p = getNodePos(E[j].second, V);
+                output.write(reinterpret_cast<const char *>(&p), sizeof(p));
             }
-            output << "\n";
             cur = i;
         }
     }
     for (uint j = cur; j < i; ++j) {
-        output << getNodePos(E[j].second, V);
-        if (j + 1 < i)output << " ";
+        uint p = getNodePos(E[j].second, V);
+        output.write(reinterpret_cast<const char *>(&p), sizeof(p));
     }
-    output << "\n";
 }
 
 void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<compactNode<uint>> &V) {
@@ -238,7 +229,10 @@ void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<c
         compactNode<uint> s(id, 0);
         auto iter = std::lower_bound(V.begin(), V.end(), s);
         assert(iter->id == id);
-        output << iter->id << " " << phi << " " << lambda << " " << iter->offset << "\n";
+        output.write(reinterpret_cast<const char *>(&iter->id), sizeof(iter->id));
+        output.write(reinterpret_cast<const char *>(&phi), sizeof(phi));
+        output.write(reinterpret_cast<const char *>(&lambda), sizeof(lambda));
+        output.write(reinterpret_cast<const char *>(&iter->offset), sizeof(iter->offset));
     }
 }
 
@@ -250,8 +244,6 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
 
     std::vector<compactNode<uint>> V = proceedNodes(nodes);
     std::sort(V.begin(), V.end());
-
-
     std::vector<edge> E = proceedEdges(edges);
     std::sort(E.begin(), E.end(), [](const edge &lhs, const edge &rhs) -> bool {
         if (lhs.first != rhs.first) {
@@ -259,16 +251,19 @@ prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, 
         }
         return lhs.second < rhs.second;
     });
+
     setOffset(output, V, E);
+
     for (int i = (int) V.size() - 2; i >= 0; --i) {
         V[i].offset = std::min(V[i].offset, V[i + 1].offset);
     }
 
     // Clear output file for correct offset
     output.close();
-    output.open(outputFilename);
+    output.open(outputFilename, std::ios::binary | std::ios::out);
+    uint size = V.size();
+    output.write(reinterpret_cast<const char *>(&size), sizeof(size));
 
-    output << V.size() << "\n";
     printNodes(output, nodes, V);
     printEdges(output, E, V);
 }
