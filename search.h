@@ -77,10 +77,6 @@ void
 find(std::ifstream &graph, const long long offset, const std::vector<compactNode<long long>> &V, const uint start,
      const uint finish,
      std::ofstream &output, bool isDetailed) {
-
-#ifdef DEBUG
-    std::cout << "Searching: " << start << " " << finish << std::endl;
-#endif
     uint finishPos = getPos(finish, V);
     node finishNode = getNode(finishPos, graph, V);
 
@@ -152,16 +148,9 @@ void solve(const std::string &graphFilename, const std::string &inputFilename, c
     std::ifstream input(inputFilename);
     std::ofstream output(outputFilename, std::ios::binary);
 
-#ifdef DEBUG
-    auto startNodes = std::chrono::steady_clock::now();
-#endif
 
     std::vector<compactNode<long long>> V = readNodes(graph);
     sort(V.begin(), V.end());
-
-#ifdef DEBUG
-    std::cout << "Nodes done in " << since(startNodes).count() / 1000 << " sec" << std::endl;
-#endif
 
     long long offset = graph.tellg();
 

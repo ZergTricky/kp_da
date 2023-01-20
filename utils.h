@@ -13,8 +13,6 @@
 #include "string"
 
 
-#define DEBUG
-
 using uint = unsigned int;
 
 const double PI = acos(-1);
@@ -244,52 +242,23 @@ void printNodes(std::ofstream &output, std::ifstream &nodes, const std::vector<c
     }
 }
 
-#ifdef DEBUG
-
-template<
-        class result_t   = std::chrono::milliseconds,
-        class clock_t    = std::chrono::steady_clock,
-        class duration_t = std::chrono::milliseconds
->
-auto since(std::chrono::time_point<clock_t, duration_t> const &start) {
-    return std::chrono::duration_cast<result_t>(clock_t::now() - start);
-}
-
-#endif
-
-
 void
 prepareFile(const std::string &nodesFilename, const std::string &edgesFilename, const std::string &outputFilename) {
     std::ifstream nodes(nodesFilename, std::ios::in);
     std::ifstream edges(edgesFilename, std::ios::in);
     std::ofstream output(outputFilename, std::ios::binary | std::ios::out);
 
-#ifdef DEBUG
-    auto startNodes = std::chrono::steady_clock::now();
-#endif
     std::vector<compactNode<uint>> V = proceedNodes(nodes);
     std::sort(V.begin(), V.end());
-#ifdef DEBUG
-    std::cout << "Nodes done in " << since(startNodes).count() / 1000 << " sec" << std::endl;
-#endif
 
 
-#ifdef DEBUG
-    auto startEdges = std::chrono::steady_clock::now();
-#endif
     std::vector<edge> E = proceedEdges(edges);
-#ifdef DEBUG
-    std::cout << "Edges read in " << since(startEdges).count() / 1000 << " sec" << std::endl;
-#endif
     std::sort(E.begin(), E.end(), [](const edge &lhs, const edge &rhs) -> bool {
         if (lhs.first != rhs.first) {
             return lhs.first < rhs.first;
         }
         return lhs.second < rhs.second;
     });
-#ifdef DEBUG
-    std::cout << "Edges done in " << since(startEdges).count() / 1000 << " sec" << std::endl;
-#endif
     setOffset(output, V, E);
     for (int i = (int) V.size() - 2; i >= 0; --i) {
         V[i].offset = std::min(V[i].offset, V[i + 1].offset);
